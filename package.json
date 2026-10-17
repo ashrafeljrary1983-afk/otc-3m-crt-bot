@@ -1,0 +1,14 @@
+{
+  "name": "otc-3m-crt-bot",
+  "version": "1.0.0",
+  "description": "3-Minute OTC CRT Sniper Trading Bot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
