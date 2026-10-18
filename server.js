@@ -16,41 +16,23 @@ const TELEGRAM_BOT_TOKEN = "8820098367:AAE1ZCWRXj4QQeR5I8KJYkEvtEmJeHEv5OE";
 const TELEGRAM_CHAT_ID = "-1004373443600";
 const AFFILIATE_LINK = "https://broker-qx.pro/sign-up/?lid=2392983";
 
-// Full List of Currency Pairs with Flags
+// Stable and High-Volume Currency Pairs
 const basePairs = [
   { name: "EUR/USD", flag: "🇪🇺🇺🇸" },
   { name: "GBP/USD", flag: "🇬🇧🇺🇸" },
-  { name: "AUD/CAD", flag: "🇦🇺🇨🇦" },
-  { name: "GBP/CAD", flag: "🇬🇧🇨🇦" },
   { name: "USD/JPY", flag: "🇺🇸🇯🇵" },
-  { name: "EUR/GBP", flag: "🇪🇺🇬🇧" },
-  { name: "NZD/USD", flag: "🇳🇿🇺🇸" },
-  { name: "USD/CHF", flag: "🇺🇸🇨🇭" },
   { name: "AUD/USD", flag: "🇦🇺🇺🇸" },
   { name: "USD/CAD", flag: "🇺🇸🇨🇦" },
+  { name: "USD/CHF", flag: "🇺🇸🇨🇭" },
+  { name: "EUR/GBP", flag: "🇪🇺🇬🇧" },
   { name: "EUR/JPY", flag: "🇪🇺🇯🇵" },
-  { name: "EUR/CHF", flag: "🇪🇺🇨🇭" },
-  { name: "CHF/JPY", flag: "🇨🇭🇯🇵" },
-  { name: "USD/BRL", flag: "🇺🇸🇧🇷" },
-  { name: "USD/TRY", flag: "🇺🇸🇹🇷" },
-  { name: "USD/EGP", flag: "🇺🇸🇪🇬" },
-  { name: "USD/DZD", flag: "🇺🇸🇩🇿" },
-  { name: "USD/PKR", flag: "🇺🇸🇵🇰" },
-  { name: "USD/BDT", flag: "🇺🇸🇧🇩" },
+  { name: "GBP/JPY", flag: "🇬🇧🇯🇵" },
+  { name: "AUD/CAD", flag: "🇦🇺🇨🇦" },
+  { name: "NZD/USD", flag: "🇳🇿🇺🇸" },
   { name: "USD/MXN", flag: "🇺🇸🇲🇽" },
-  { name: "USD/INR", flag: "🇺🇸🇮🇳" },
-  { name: "USD/IDR", flag: "🇺🇸🇮🇩" },
-  { name: "USD/ARS", flag: "🇺🇸🇦🇷" },
-  { name: "USD/PHP", flag: "🇺🇸🇵🇭" },
+  { name: "USD/BRL", flag: "🇺🇸🇧🇷" },
   { name: "XAU/USD", flag: "🥇" },
-  { name: "XAG/USD", flag: "🥈" },
-  { name: "USD/CRUDE", flag: "🛢️" },
-  { name: "UKBRENT", flag: "🇬🇧🛢️" },
-  { name: "AVALANCHE", flag: "🔺" },
-  { name: "AXIE INFINITY", flag: "🎮" },
-  { name: "COSMOS", flag: "⚛️" },
-  { name: "BITCOIN", flag: "₿" },
-  { name: "SOLANA", flag: "☀️" }
+  { name: "BITCOIN", flag: "₿" }
 ];
 
 // Stats Tracker for the last 10 signals batch
@@ -60,8 +42,6 @@ let batchStats = {
   losses: 0,
   draws: 0
 };
-
-let overallTotal = 0;
 
 // Check Market Type (Libya Time GMT+2)
 function isRealMarket() {
@@ -101,9 +81,9 @@ async function run3MinSniperCycle() {
 
   try {
     const realMarket = isRealMarket();
-    const marketLabel = realMarket ? "Real Market 🟩 Quotex 🟢" : "OTC Market 🟩 Quotex 🔄";
+    const marketLabel = realMarket ? "Real Market Quotex" : "OTC Market Quotex";
 
-    // Select random pair
+    // Select random pair from stable list
     const randomItem = basePairs[Math.floor(Math.random() * basePairs.length)];
     const pairSymbol = realMarket ? randomItem.name : `${randomItem.name}-OTC`;
     const fullPairName = `${randomItem.flag} ${pairSymbol}`;
@@ -120,7 +100,7 @@ async function run3MinSniperCycle() {
     const timeVal = `${hours}:${minutes} (GMT+2) 🇱🇾`;
 
     // Construct Signal Message
-    const signalMessage = `🤖 *AUTOMATED TRADING SIGNAL*\n\n` +
+    const signalMessage = `🤖 *AUTOMATED TRADING SIGNAL (3M)*\n\n` +
                           `📍 *Pair:* ${fullPairName}\n` +
                           `🌐 *Market Type:* ${marketLabel}\n` +
                           `📊 *Timeframe:* 3 Minutes\n` +
@@ -130,7 +110,7 @@ async function run3MinSniperCycle() {
 
     await sendTelegramMessage(signalMessage);
 
-    // Wait exactly 3 minutes for trade expiration
+    // Wait 3 minutes for trade expiration
     setTimeout(async () => {
       const randVal = Math.random();
       let finalResult = 'WIN';
@@ -138,7 +118,6 @@ async function run3MinSniperCycle() {
       else if (randVal < 0.15) finalResult = 'DRAW';
 
       batchStats.total++;
-      overallTotal++;
       let resultTextDesc = '';
 
       if (finalResult === 'WIN') {
@@ -175,11 +154,11 @@ async function run3MinSniperCycle() {
 
         await sendTelegramMessage(summaryMessage);
 
-        // Reset batch stats for next 10 signals
+        // Reset batch stats
         batchStats = { total: 0, wins: 0, losses: 0, draws: 0 };
       }
 
-      // Signal completed, allow next signal after 1 minute rest
+      // ⏳ 1-minute buffer interval for traders to prepare before next signal starts
       setTimeout(() => {
         isSignalRunning = false;
       }, 60 * 1000);
@@ -192,12 +171,12 @@ async function run3MinSniperCycle() {
   }
 }
 
-// Check every minute if cycle can run
+// Check every 20 seconds if cycle can run
 setInterval(() => {
   if (!isSignalRunning) {
     run3MinSniperCycle();
   }
-}, 30 * 1000);
+}, 20 * 1000);
 
 // Initial run
 setTimeout(() => {
@@ -206,7 +185,7 @@ setTimeout(() => {
 
 app.get('/', (req, res) => {
   const marketStatus = isRealMarket() ? "Real Market 🟢" : "OTC Market 🔄";
-  res.send(`🚀 3-Minute Automated Signal Bot (New Formatting & Batch 10 Stats) is Live!<br>Current Market: <b>${marketStatus}</b>`);
+  res.send(`🚀 3-Minute Automated Signal Bot is Live!<br>Current Market: <b>${marketStatus}</b>`);
 });
 
 app.listen(PORT, () => {
