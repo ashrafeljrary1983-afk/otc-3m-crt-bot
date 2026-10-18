@@ -53,13 +53,15 @@ const basePairs = [
   { name: "SOLANA", flag: "☀️" }
 ];
 
-// Stats Tracker
-let stats = {
+// Stats Tracker for the last 10 signals batch
+let batchStats = {
   total: 0,
   wins: 0,
   losses: 0,
   draws: 0
 };
+
+let overallTotal = 0;
 
 // Check Market Type (Libya Time GMT+2)
 function isRealMarket() {
@@ -99,7 +101,7 @@ async function run3MinSniperCycle() {
 
   try {
     const realMarket = isRealMarket();
-    const marketLabel = realMarket ? "Real Market 🟢" : "OTC Market 🔄";
+    const marketLabel = realMarket ? "Real Market 🟩 Quotex 🟢" : "OTC Market 🟩 Quotex 🔄";
 
     // Select random pair
     const randomItem = basePairs[Math.floor(Math.random() * basePairs.length)];
@@ -115,21 +117,16 @@ async function run3MinSniperCycle() {
     const targetTime = new Date(now.getTime() + (3 * 60 * 1000) + (2 * 60 * 60 * 1000));
     const hours = String(targetTime.getUTCHours()).padStart(2, '0');
     const minutes = String(targetTime.getUTCMinutes()).padStart(2, '0');
-    const timeVal = `${hours}:${minutes} (GMT+2)`;
+    const timeVal = `${hours}:${minutes} (GMT+2) 🇱🇾`;
 
     // Construct Signal Message
-    let signalMessage = `🤖 *AUTOMATED TRADING SIGNAL*\n\n` +
-                          `📊 *Pair:* ${fullPairName}\n` +
+    const signalMessage = `🤖 *AUTOMATED TRADING SIGNAL*\n\n` +
+                          `📍 *Pair:* ${fullPairName}\n` +
                           `🌐 *Market Type:* ${marketLabel}\n` +
-                          `⏱️ *Timeframe:* 3 Mins\n` +
+                          `📊 *Timeframe:* 3 Minutes\n` +
                           `⏳ *Duration:* 3 Minutes\n` +
-                          `💙 *Entry Time:* ${timeVal}\n\n` +
-                          `🎯 *Direction:* ${directionText}\n`;
-
-    // Add promo affiliate link ONLY once every 10 signals
-    if (stats.total > 0 && stats.total % 10 === 0) {
-      signalMessage += `\n🎁 [Join VIP & Claim Bonus](${AFFILIATE_LINK})`;
-    }
+                          `🕓 *Entry Time:* ${timeVal}\n\n` +
+                          `🎯 *Direction:* ${directionText}`;
 
     await sendTelegramMessage(signalMessage);
 
@@ -140,36 +137,47 @@ async function run3MinSniperCycle() {
       if (randVal < 0.12) finalResult = 'LOSS';
       else if (randVal < 0.15) finalResult = 'DRAW';
 
-      stats.total++;
+      batchStats.total++;
+      overallTotal++;
       let resultTextDesc = '';
 
       if (finalResult === 'WIN') {
-        stats.wins++;
+        batchStats.wins++;
         resultTextDesc = 'WIN 🟢 💵';
       } else if (finalResult === 'LOSS') {
-        stats.losses++;
+        batchStats.losses++;
         resultTextDesc = 'LOSS 🔴 🪙';
       } else {
-        stats.draws++;
+        batchStats.draws++;
         resultTextDesc = 'DRAW ⚖️';
       }
 
-      const totalWinLoss = stats.wins + stats.losses;
-      const winRate = totalWinLoss > 0 ? ((stats.wins / totalWinLoss) * 100).toFixed(1) : "0.0";
-
-      const resultMessage = `📈 *SIGNAL RESULT & PERFORMANCE*\n\n` +
-                            `💎 *Pair:* ${fullPairName}\n` +
+      // Single trade result message
+      const resultMessage = `🏁 *SIGNAL RESULT*\n\n` +
+                            `📍 *Pair:* ${fullPairName}\n` +
                             `🎯 *Direction:* ${dirSimple}\n` +
-                            `🏁 *Result:* ${resultTextDesc}\n\n` +
-                            `--------------------\n` +
-                            `📊 *Overall Performance Stats:*\n` +
-                            `• Total Signals: ${stats.total}\n` +
-                            `• Winning Signals: ${stats.wins} 🟢\n` +
-                            `• Losing Signals: ${stats.losses} 🔴\n` +
-                            `• Draw Signals: ${stats.draws} ⚖️\n` +
-                            `🎯 *Win Rate:* ${winRate}%`;
+                            `📊 *Result:* ${resultTextDesc}`;
 
       await sendTelegramMessage(resultMessage);
+
+      // Check if 10 signals batch is completed
+      if (batchStats.total === 10) {
+        const totalWinLoss = batchStats.wins + batchStats.losses;
+        const winRate = totalWinLoss > 0 ? ((batchStats.wins / totalWinLoss) * 100).toFixed(1) : "0.0";
+
+        const summaryMessage = `📊 *LAST 10 SIGNALS PERFORMANCE REPORT*\n\n` +
+                               `• Total Signals: ${batchStats.total}\n` +
+                               `• Winning Signals: ${batchStats.wins} 🟢\n` +
+                               `• Losing Signals: ${batchStats.losses} 🔴\n` +
+                               `• Draw Signals: ${batchStats.draws} ⚖️\n` +
+                               `🎯 *Win Rate:* ${winRate}%\n\n` +
+                               `🎁 [Join VIP & Claim Bonus](${AFFILIATE_LINK})`;
+
+        await sendTelegramMessage(summaryMessage);
+
+        // Reset batch stats for next 10 signals
+        batchStats = { total: 0, wins: 0, losses: 0, draws: 0 };
+      }
 
       // Signal completed, allow next signal after 1 minute rest
       setTimeout(() => {
@@ -198,7 +206,7 @@ setTimeout(() => {
 
 app.get('/', (req, res) => {
   const marketStatus = isRealMarket() ? "Real Market 🟢" : "OTC Market 🔄";
-  res.send(`🚀 3-Minute Automated Signal Bot (GMT+2 Version) is Live!<br>Current Market: <b>${marketStatus}</b>`);
+  res.send(`🚀 3-Minute Automated Signal Bot (New Formatting & Batch 10 Stats) is Live!<br>Current Market: <b>${marketStatus}</b>`);
 });
 
 app.listen(PORT, () => {
