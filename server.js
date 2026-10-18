@@ -11,9 +11,12 @@ app.use(express.static(path.join(__dirname)));
 
 const PORT = process.env.PORT || 10000;
 
+// توكن البوت
 const TELEGRAM_BOT_TOKEN = "8820098367:AAE1ZCWRXj4QQeR5I8KJYkEvtEmJeHEv5OE";
+// معرف قناة صفقات الـ 3 دقائق (Binary options 3mins)
 const TELEGRAM_CHAT_ID = "-1004373443600";
 
+// رابط الإحالة الخاص بك
 const AFFILIATE_LINK = "https://broker-qx.pro/sign-up/?lid=2392983";
 
 // دالة تحديد السوق الحالي حسب توقيت ليبيا (UTC+2)
@@ -23,18 +26,18 @@ function getCurrentMarketType() {
     const libyaHours = (utcHours + 2) % 24;
     const libyaDay = now.getUTCDay(); // 0 = الأحد, 1 = الاثنين, ... 5 = الجمعة, 6 = السبت
 
-    // الاستثناء: من الاثنين (1) إلى الجمعة (5) بين 8 صباحاً و 9 مساءً (21:00) -> سوق حقيقي
+    // من الاثنين إلى الجمعة (بين 8 صباحاً و 9 مساءً بتوقيت ليبيا) -> سوق حقيقي
     if (libyaDay >= 1 && libyaDay <= 5) {
         if (libyaHours >= 8 && libyaHours < 21) {
             return "Real Market 🟢 (السوق الحقيقي)";
         }
     }
 
-    // باقي الأوقات وأيام السبت والأحد -> سوق OTC
+    // باقي الأوقات وأيام العطلة -> سوق OTC
     return "OTC Market 🔄 (سوق الـ OTC)";
 }
 
-// دالة جلب السعر وتوليد الإشارة التلقائية (3 دقائق مع التبديل الذكي)
+// دالة جلب السعر وتوليد إشارة الـ 3 دقائق تلقائياً
 async function generateAndSendAutoSignal() {
     try {
         const marketType = getCurrentMarketType();
@@ -49,7 +52,6 @@ async function generateAndSendAutoSignal() {
         
         const isCall = Math.random() >= 0.5;
         const directionText = isCall ? "صعود ⬆️💚" : "هبوط ⬇️🔴";
-        const dirName = isCall ? "صعود ⬆️" : "هبوط ⬇️";
 
         const pairName = marketType.includes("OTC") ? "EUR/USD-OTC" : "EUR/USD";
 
@@ -74,19 +76,19 @@ async function generateAndSendAutoSignal() {
             text: signalMessage,
             parse_mode: 'Markdown'
         });
-        console.log("تم إرسال إشارة الـ 3 دقائق بنجاح!");
+        console.log("تم إرسال إشارة الـ 3 دقائق بنجاح إلى القناة!");
     } catch (error) {
         console.error("خطأ في إرسال الإشارة الآلية:", error.message);
     }
 }
 
-// تشغيل نظام الإشارات التلقائية كل 5 دقائق
+// تشغيل نظام الإشارات كل 5 دقائق
 setInterval(generateAndSendAutoSignal, 5 * 60 * 1000);
 setTimeout(generateAndSendAutoSignal, 5000);
 
 app.get('/', (req, res) => {
     const currentMarket = getCurrentMarketType();
-    res.send(`🚀 Automated 3M Bot is Live!<br>📍 حالة السوق الحالية الآن: <b>${currentMarket}</b>`);
+    res.send(`🚀 Automated 3M Bot is Live for Channel Binary options 3mins!<br>📍 حالة السوق الحالية: <b>${currentMarket}</b>`);
 });
 
 app.listen(PORT, () => {
