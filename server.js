@@ -1,29 +1,20 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
-// بيانات التوكن وقناة تيليجرام الخاصة بك
+app.use(express.static(path.join(__dirname)));
+
+const PORT = process.env.PORT || 10000;
+
 const TELEGRAM_BOT_TOKEN = "8820098367:AAE1ZCWRXj4QQeR5I8KJYkEvtEmJeHEv5OE";
 const TELEGRAM_CHAT_ID = "-1004373443600";
 
-// دالة إرسال الإشارات إلى تيليجرام
-async function sendTelegramMessage(message) {
-    try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await axios.post(url, {
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'Markdown'
-        });
-        console.log("تم إرسال الإشارة بنجاح إلى القناة!");
-    } catch (error) {
-        console.error("خطأ في إرسال الرسالة إلى تيليجرام:", error.response?.data || error.message);
-    }
-}
+const AFFILIATE_LINK = "https://broker-qx.pro/sign-up/?lid=2392983";
 
 // دالة تحديد السوق الحالي حسب توقيت ليبيا (UTC+2)
 function getCurrentMarketType() {
@@ -43,45 +34,61 @@ function getCurrentMarketType() {
     return "OTC Market 🔄 (سوق الـ OTC)";
 }
 
-// دالة جلب السعر الحقيقي وتوليد الإشارة أوتوماتيكياً
+// دالة جلب السعر وتوليد الإشارة التلقائية (3 دقائق مع التبديل الذكي)
 async function generateAndSendAutoSignal() {
     try {
         const marketType = getCurrentMarketType();
         
-        // جلب سعر حقيقي مجاني لزوج EUR/USD
-        const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
-        const rate = response.data.rates.USD;
+        let rate = "1.0850";
+        try {
+            const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
+            rate = response.data.rates.USD.toFixed(4);
+        } catch (e) {
+            console.log("Using fallback rate");
+        }
         
-        // تحديد اتجاه عشوائي ذكي (صعود / هبوط) لمدة 3 دقائق
-        const directions = ["صعود 🟢 (CALL)", "هبوط 🔴 (PUT)"];
-        const randomDirection = directions[Math.floor(Math.random() * directions.length)];
-        
-        // تحديد اسم الزوج بناءً على نوع السوق الحالي
+        const isCall = Math.random() >= 0.5;
+        const directionText = isCall ? "صعود ⬆️💚" : "هبوط ⬇️🔴";
+        const dirName = isCall ? "صعود ⬆️" : "هبوط ⬇️";
+
         const pairName = marketType.includes("OTC") ? "EUR/USD-OTC" : "EUR/USD";
 
-        const message = `🚨 *إشارة صفقة أوتوماتيكية (3 دقائق)*\n\n` +
-                        `💱 الزوج: *${pairName}*\n` +
-                        `📊 السعر الحالي: *${rate}*\n` +
-                        `📈 الاتجاه المقترح: *${randomDirection}*\n` +
-                        `⏱️ الفريم: *3 دقائق*\n` +
-                        `🌐 نوع السوق: *${marketType}*`;
+        const now = new Date();
+        const targetTime = new Date(now.getTime() + (2 * 60 * 1000) + (2 * 60 * 60 * 1000));
+        const hours = String(targetTime.getUTCHours()).padStart(2, '0');
+        const minutes = String(targetTime.getUTCMinutes()).padStart(2, '0');
+        const timeVal = `${hours}:${minutes} 🇱🇾`;
 
-        await sendTelegramMessage(message);
+        const signalMessage = `🚨 *إشارة صفقة أوتوماتيكية (3 دقائق)*\n\n` +
+                              `💱 الزوج: *${pairName}*\n` +
+                              `💙 الوقت: *${timeVal}*\n` +
+                              `📊 السعر الحالي: *${rate}*\n` +
+                              `📈 الاتجاه المقترح: *${directionText}*\n` +
+                              `⏱️ الفريم: *3 دقائق*\n` +
+                              `🌐 نوع السوق: *${marketType}*\n\n` +
+                              `🎁 [انضم للقناة الـ VIP وسجل للحصول على البونص](${AFFILIATE_LINK})`;
+
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await axios.post(url, {
+            chat_id: TELEGRAM_CHAT_ID,
+            text: signalMessage,
+            parse_mode: 'Markdown'
+        });
+        console.log("تم إرسال إشارة الـ 3 دقائق بنجاح!");
     } catch (error) {
-        console.error("خطأ في جلب السعر أو إرسال الإشارة الآلية:", error.message);
+        console.error("خطأ في إرسال الإشارة الآلية:", error.message);
     }
 }
 
-// تشغيل نظام الإشارات التلقائية كل 5 دقائق (5 * 60 * 1000 = 300000 ميلي ثانية)
-setInterval(generateAndSendAutoSignal, 300000);
+// تشغيل نظام الإشارات التلقائية كل 5 دقائق
+setInterval(generateAndSendAutoSignal, 5 * 60 * 1000);
+setTimeout(generateAndSendAutoSignal, 5000);
 
-// صفحة البداية للتأكد من حالة السيرفر
 app.get('/', (req, res) => {
     const currentMarket = getCurrentMarketType();
-    res.send(`🚀 Fully Automated 24/7 Bot is Live!<br>📍 حالة السوق الحالية الآن: <b>${currentMarket}</b>`);
+    res.send(`🚀 Automated 3M Bot is Live!<br>📍 حالة السوق الحالية الآن: <b>${currentMarket}</b>`);
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
