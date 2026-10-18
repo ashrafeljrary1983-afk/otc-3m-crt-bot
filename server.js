@@ -48,11 +48,11 @@ async function generateAndSendAutoSignal() {
     try {
         const marketType = getCurrentMarketType();
         
-        // جلب سعر حقيقي مجاني لزوج EUR/USD كمثال
+        // جلب سعر حقيقي مجاني لزوج EUR/USD
         const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
         const rate = response.data.rates.USD;
         
-        // تحديد اتجاه عشوائي ذكي أو بناءً على حركة السعر (صعود / هبوط) لمدة 3 دقائق
+        // تحديد اتجاه عشوائي ذكي (صعود / هبوط) لمدة 3 دقائق
         const directions = ["صعود 🟢 (CALL)", "هبوط 🔴 (PUT)"];
         const randomDirection = directions[Math.floor(Math.random() * directions.length)];
         
@@ -72,9 +72,8 @@ async function generateAndSendAutoSignal() {
     }
 }
 
-// تشغيل نظام الإشارات التلقائية كل 15 دقيقة (يمكنك تعديل الوقت حسب رغبتك، مثلاً كل 300000 لـ 5 دقائق)
-// 15 دقيقة = 15 * 60 * 1000 = 900000 ميلي ثانية
-setInterval(generateAndSendAutoSignal, 900000);
+// تشغيل نظام الإشارات التلقائية كل 5 دقائق (5 * 60 * 1000 = 300000 ميلي ثانية)
+setInterval(generateAndSendAutoSignal, 300000);
 
 // صفحة البداية للتأكد من حالة السيرفر
 app.get('/', (req, res) => {
